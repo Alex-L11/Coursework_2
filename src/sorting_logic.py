@@ -11,7 +11,7 @@ class AircraftSorting:
             return []
 
         sorted_aircraft = sorted(
-            aircraft_list, key=lambda a: a.geo_altitude if a.geo_altitude is not None else float('-inf'), reverse=True
+            aircraft_list, key=lambda a: a.geo_altitude if a.geo_altitude is not None else float("-inf"), reverse=True
         )
 
         return sorted_aircraft[:n]
