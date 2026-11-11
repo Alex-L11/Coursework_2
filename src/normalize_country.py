@@ -3,7 +3,7 @@ from typing import Optional
 
 import pycountry
 
-LATIN_PATTERN = re.compile(r'^[a-zA-Z\s]+$')
+LATIN_PATTERN = re.compile(r"^[a-zA-Z\s]+$")
 
 
 def normalize_country(name_country: str) -> Optional[str]:
@@ -16,7 +16,7 @@ def normalize_country(name_country: str) -> Optional[str]:
     return country[0].name
 
 
-def name_country_latin(country: str) -> bool:
+def name_latin(country: str) -> bool:
     """Проверяет, чтобы в названии были только латинские буквы"""
 
     country = country.strip()
