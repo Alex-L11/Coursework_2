@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 import src.data_for_planes
-from src.add_info_to_file import JSONAircraftStorage, ReadWriteJSON, SetupFile
+from src.add_info_to_file import JSONAircraftStorage, SetupFile
 from src.data_for_planes import Aircraft
 
 
@@ -27,10 +27,10 @@ def test_read_file(tmp_path: Path) -> None:
     file_1 = tmp_path / "bad.json"
     file.write_text(json.dumps({"version": 1.0, "aircraft": [{"bort_number": "avsd2341"}]}), encoding="utf-8")
 
-    data = ReadWriteJSON.read_data(str(file))
+    data = JSONAircraftStorage.read_data(str(file))
     file_1.write_text(json.dumps({"version": 3.0, "aircraft": []}))
 
-    data_1 = ReadWriteJSON.read_data((str(file_1)))
+    data_1 = JSONAircraftStorage.read_data((str(file_1)))
 
     assert data == {"version": 1.0, "aircraft": [{"bort_number": "avsd2341"}]}
     assert data_1 == {"version": 3.0, "aircraft": []}
@@ -39,7 +39,7 @@ def test_read_file(tmp_path: Path) -> None:
 def test_read_file_error(tmp_path: Path) -> None:
     file = tmp_path / "bad.json"
     file.write_text(json.dumps({"version": 3.0, "aircraft": ""}))
-    data = ReadWriteJSON.read_data(str(file))
+    data = JSONAircraftStorage.read_data(str(file))
 
     assert data == {"version": 1.0, "aircraft": []}
 
@@ -47,7 +47,7 @@ def test_read_file_error(tmp_path: Path) -> None:
 def test_read_file_error_1(tmp_path: Path) -> None:
     file = tmp_path / "no file.json"
 
-    data = ReadWriteJSON.read_data(str(file))
+    data = JSONAircraftStorage.read_data(str(file))
 
     assert data == {"version": 1.0, "aircraft": []}
 
@@ -67,7 +67,7 @@ def test_get_aircraft_success(tmp_path: Path, data_aircraft: dict) -> None:
     assert storage.get_aircraft(criteria={"country": "Canada"}) == []
 
 
-def test_jsonircraftstorage_error() -> None:
+def test_jsonaircraft_storage_error() -> None:
     with pytest.raises(ValueError, match="Нужно указать имя или путь файла"):
         JSONAircraftStorage("")
 
@@ -80,7 +80,7 @@ def test_add_aircraft(tmp_path: Path, aircraft_1: Aircraft, data_aircraft: dict)
     storage = JSONAircraftStorage("ignore_name", file_path=str(file_path))
     storage.add_aircraft(aircraft_1)
 
-    data = ReadWriteJSON.read_data(str(file_path))
+    data = JSONAircraftStorage.read_data(str(file_path))
 
     assert len(data["aircraft"]) == 3
     assert data["aircraft"][0]["bort_number"] == "avsd2341"
@@ -93,7 +93,7 @@ def test_delete_aircraft(tmp_path: Path, data_aircraft_2: dict) -> None:
     storage = JSONAircraftStorage("file_name", file_path=str(file_path))
 
     count = storage.delete_aircraft(criteria={"country": "Spain"})
-    data = ReadWriteJSON.read_data(str(file_path))
+    data = JSONAircraftStorage.read_data(str(file_path))
 
     assert count == 1
     assert len(data["aircraft"]) == 2

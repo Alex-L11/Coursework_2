@@ -5,17 +5,17 @@ from src.data_for_planes import Aircraft, PlaneExtractor
 
 def test_call_get_aeroplanes_error() -> None:
     with pytest.raises(TypeError, match="Входные данные ожидаются в виде словаря"):
-        PlaneExtractor.call_get_aeroplanes(["no data"])  # type: ignore[arg-type]
+        PlaneExtractor.get_aeroplanes(["no data"])  # type: ignore[arg-type]
 
     with pytest.raises(ValueError, match="API не вернул список самолетов"):
-        PlaneExtractor.call_get_aeroplanes({})
+        PlaneExtractor.get_aeroplanes({})
 
     with pytest.raises(ValueError, match='В словаре должен быть ключ "states" со списком данных'):
-        PlaneExtractor.call_get_aeroplanes({"states": {}})
+        PlaneExtractor.get_aeroplanes({"states": {}})
 
 
 def test_call_get_aeroplanes_success(aircraft: dict) -> None:
-    obj = PlaneExtractor.call_get_aeroplanes(aircraft)
+    obj = PlaneExtractor.get_aeroplanes(aircraft)
     assert len(obj) == 1
     assert obj[0].bort_number == "4b1812"
     assert obj[0].country_plane == "United States"
@@ -25,7 +25,7 @@ def test_call_get_aeroplanes_success(aircraft: dict) -> None:
 
 
 def test_call_get_aeroplanes_error_obj(aircraft_error_1: dict) -> None:
-    obj = PlaneExtractor.call_get_aeroplanes(aircraft_error_1)
+    obj = PlaneExtractor.get_aeroplanes(aircraft_error_1)
     assert len(obj) == 0
 
 
