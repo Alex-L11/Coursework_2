@@ -28,41 +28,21 @@ class AircraftStorage(ABC):
 
 class SetupFile:
     """Создает файл, если его нет"""
-    DEFAULT_DICT = {'version': '1.0', 'records': []}
+
+    DEFAULT_DICT = {"version": "1.0", "records": []}
 
     @classmethod
     def setup_file(cls, file_name: str) -> str:
         dir_name = os.path.dirname(os.path.dirname((abspath(__file__))))
-        dir_way = os.path.join(dir_name, 'data', file_name)
+        dir_way = os.path.join(dir_name, "data", file_name)
         file_path = os.path.abspath(dir_way)
 
         # Если файла нет, создаем его
         if not os.path.isfile(dir_way):
-            with open(dir_way, 'w', encoding='utf-8') as f:
+            with open(dir_way, "w", encoding="utf-8") as f:
                 json.dump(cls.DEFAULT_DICT, f, ensure_ascii=False, indent=4)
 
         return file_path
-
-
-class ReadWriteJSON:
-    """Читает и записывает данные в файле JSON"""
-    @staticmethod
-    def read_data(file_path: str) -> dict[str, Any]:
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-
-            if 'aircraft' not in data or not isinstance(data['aircraft'], list):
-                return {'version': 1.0, 'aircraft': []}
-            return data     # type: ignore[no-any-return]
-
-        except FileNotFoundError:
-            return {'version': 1.0, 'aircraft': []}
-
-    @staticmethod
-    def write_data(file_path: str, data: dict[str, Any]) -> None:
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
 
 
 class JSONAircraftStorage(AircraftStorage):
@@ -74,47 +54,78 @@ class JSONAircraftStorage(AircraftStorage):
         elif file_name:
             self.file_path = SetupFile.setup_file(file_name)
         else:
-            raise ValueError('Нужно указать имя или путь файла')
+            raise ValueError("Нужно указать имя или путь файла")
+
+    @staticmethod
+    def read_data(file_path: str) -> dict[str, Any]:
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            if "aircraft" not in data or not isinstance(data["aircraft"], list):
+                return {"version": 1.0, "aircraft": []}
+            return data  # type: ignore[no-any-return]
+
+        except FileNotFoundError:
+            return {"version": 1.0, "aircraft": []}
+
+    @staticmethod
+    def write_data(file_path: str, data: dict[str, Any]) -> None:
+        payload = {"version": 1.0, "aircraft": data}
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=4)
 
     def get_aircraft(self, criteria: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
         """Возвращает информацию о самолетах по указанным критериям"""
-        data = ReadWriteJSON.read_data(self.file_path)
-        raw_aircraft = data.get('aircraft', [])
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
-        result: list[dict[str, Any]] = []
-        for aircraft in raw_aircraft:
-            if not criteria:
-                result.append(aircraft)
-                continue
+            if "aircraft" not in data or not isinstance(data["aircraft"], list):
+                return []
 
-            crit = True
-            for key, value in criteria.items():
-                if key not in aircraft or aircraft[key] != value:
-                    crit = False
-                    break
+            raw_aircraft = data.get("aircraft", [])
 
-            if crit:
-                result.append(aircraft)
+            result: list[dict[str, Any]] = []
+            for aircraft in raw_aircraft:
+                if not criteria:
+                    result.append(aircraft)
+                    continue
+
+                crit = True
+                for key, value in criteria.items():
+                    if key not in aircraft or aircraft[key] != value:
+                        crit = False
+                        break
+
+                if crit:
+                    result.append(aircraft)
+
+        except FileNotFoundError:
+            return []
+
+        except json.JSONDecodeError:
+            return []
 
         return result
 
     def add_aircraft(self, aircraft: Aircraft) -> None:
         """Добавляет воздушное судно в JSON-файл"""
-        data = ReadWriteJSON.read_data(self.file_path)
-        data['aircraft'].append(aircraft.to_dict())
-        ReadWriteJSON.write_data(self.file_path, data)
+        data = JSONAircraftStorage.read_data(self.file_path)
+        data["aircraft"].append(aircraft.to_dict())
+        JSONAircraftStorage.write_data(self.file_path, data["aircraft"])
 
     def delete_aircraft(self, criteria: Optional[dict[str, Any]] = None) -> int:
         """Принимает параметр по которому удалить самолеты из всего списка самолетов"""
-        data = ReadWriteJSON.read_data(self.file_path)
-        planes = data.get('aircraft', [])
+        data = JSONAircraftStorage.read_data(self.file_path)
+        planes = data.get("aircraft", [])
 
         filter_air = []
         removed_count = 0
 
         if criteria is None:
             removed_count = len(planes)
-            data['aircraft'] = []
+            data["aircraft"] = []
 
         else:
             for aircraft in planes:
@@ -130,6 +141,6 @@ class JSONAircraftStorage(AircraftStorage):
                 else:
                     filter_air.append(aircraft)
 
-            data['aircraft'] = filter_air
-        ReadWriteJSON.write_data(self.file_path, data)
+            data["aircraft"] = filter_air
+        JSONAircraftStorage.write_data(self.file_path, data["aircraft"])
         return removed_count
