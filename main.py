@@ -1,7 +1,8 @@
-from api_connector import GetCoordinate, InfoPlanes
-from data_for_planes import PlaneExtractor
-from src.normalize_country import normalize_country, name_country_latin
-from src.sorting_logic import top_altitude, filter_by_country, top_velocity, filter_by_on_ground
+from add_info_to_file import JSONAircraftStorage, SetupFile
+from src.api_connector import GetCoordinate, InfoPlanes
+from src.data_for_planes import PlaneExtractor
+from src.normalize_country import normalize_country, name_latin
+from src.sorting_logic import Aircraft, AircraftSorting
 
 
 def user_interaction() -> None:
@@ -15,7 +16,7 @@ def user_interaction() -> None:
             print("Введите еще раз, поле оказалось пустым.\n")
             continue
 
-        if name_country_latin(user_country):
+        if name_latin(user_country):
             country = normalize_country(user_country)
 
             if country is None:
@@ -61,7 +62,7 @@ def user_interaction() -> None:
 
         filter_countries = []
         for p in parts:
-            if not name_country_latin(p):
+            if not name_latin(p):
                 print(f"'{p}': используйте только латинские буквы.")
                 continue
             normalized = normalize_country(p)
@@ -86,29 +87,49 @@ def user_interaction() -> None:
             include_on_ground = True
         break
 
+    while True:
+        answer_by_file = input("Хотите записать данные в json-файл введите? Да/Нет \n").strip().lower()
+        if answer_by_file not in {'да', 'нет'}:
+            print("Введите 'да' или 'нет'.")
+            continue
+        if answer_by_file == 'да':
+            save_to_file = input("Введите латинскими буквами имя файла без пробелов: \n")
+            if name_latin(save_to_file):
+                file_name = f'{save_to_file}.json'
+                file_path = SetupFile.setup_file(file_name)
+                break
+            if save_to_file is None:
+                print("Повторите ввод еще раз")
+                continue
+            break
+        else:
+            print("Используйте только латинские буквы.\n")
+
     # Создание экземпляра класса для работы с API-сервисом
-    api = GetCoordinate()
+    api = GetCoordinate(country)
 
     # Получение координат по стране
-    coordinates = api.get_coordinate(country)
+    coordinates = api.get_api_request()
 
-    api_1 = InfoPlanes()
-    raw_data = api_1.get_info_planes(coordinates)
+    api_1 = InfoPlanes(coordinates)
+    raw_data = api_1.get_api_request()
 
     # Преобразование набора данных в список объектов
-    aircraft_objects = PlaneExtractor.call_get_aeroplanes(raw_data)
+    aircraft_objects = PlaneExtractor.get_aeroplanes(raw_data)
 
     # Вывод топ самых высоких самолетов
-    top_alt = top_altitude(aircraft_objects, top_altitude_n)
+    top_alt = AircraftSorting.top_altitude(aircraft_objects, top_altitude_n)
 
     # Вывод том самых быстрых самолета
-    top_vel = top_velocity(aircraft_objects, top_velocity_n)
+    top_vel = AircraftSorting.top_velocity(aircraft_objects, top_velocity_n)
 
     # Вывод по странам регистрации самолетов
-    filt_country = filter_by_country(aircraft_objects, filter_countries)
+    filt_country = AircraftSorting.filter_by_country(aircraft_objects, filter_countries)
 
     # Вывод по странам регистрации самолетов которые на земле или в воздухе
-    filter_by_ground = filter_by_on_ground(filt_country, include_on_ground=include_on_ground)
+    filter_by_ground = AircraftSorting.filter_by_on_ground(filt_country, include_on_ground=include_on_ground)
+
+
 
     print(f"\n---Всего самолетов {len(raw_data['states'])} ---")
     print()
@@ -127,8 +148,10 @@ def user_interaction() -> None:
     else:
         for plane in filter_by_ground:
             print(plane)
-
-    # Запись данных в файл
+    if save_to_file:
+        data_dict = [plane.to_dict() for plane in filter_by_ground]
+        JSONAircraftStorage.write_data(file_path, data_dict)
+        print(f"Файл сохранен под именем '{save_to_file}'.\n")
 
 
 
