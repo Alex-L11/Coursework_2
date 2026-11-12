@@ -1,8 +1,8 @@
-from add_info_to_file import JSONAircraftStorage, SetupFile
+from src.add_info_to_file import JSONAircraftStorage, SetupFile
 from src.api_connector import GetCoordinate, InfoPlanes
 from src.data_for_planes import PlaneExtractor
 from src.normalize_country import normalize_country, name_latin
-from src.sorting_logic import Aircraft, AircraftSorting
+from src.sorting_logic import AircraftSorting
 
 
 def user_interaction() -> None:
@@ -98,9 +98,6 @@ def user_interaction() -> None:
                 file_name = f'{save_to_file}.json'
                 file_path = SetupFile.setup_file(file_name)
                 break
-            if save_to_file is None:
-                print("Повторите ввод еще раз")
-                continue
             break
         else:
             print("Используйте только латинские буквы.\n")
